@@ -26,18 +26,39 @@ F.pinnwand = { kurz: 'Pinnwand', render(el){
   let items = [], lastId = 0, mode = 'lose', timer = null;
   let manual = ls.get('pw-manual-' + code, {}), hidden = ls.get('pw-hidden-' + code, []);
   const online = !!(P.supabaseUrl && P.supabaseKey);
+  const base = () => P.supabaseUrl.replace(/\/$/, '') + '/rest/v1/';
+  const tok = () => { let t = ls.get('pw-token-' + code, null); if (!t) { t = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join(''); ls.set('pw-token-' + code, t); } return t; };
+  let offen = ls.get('pw-offen-' + code, true);
+  async function setStatus(o){
+    offen = o; ls.set('pw-offen-' + code, o); lockUI();
+    if (!online) return true;
+    try {
+      const r = await fetch(base() + 'rpc/pinnwand_setzen', { method: 'POST', headers: Object.assign(hdr(), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ p_app: P.app || 'ih', p_sitzung: code, p_token: tok(), p_offen: o }) });
+      if (!r.ok) return false;
+      return await r.json();
+    } catch(e){ return false; }
+  }
+  function lockUI(){
+    const b = $('#pLock', el); if (!b) return;
+    b.innerHTML = offen ? `${ICON('lock',15)} Senden sperren` : `${ICON('check',15)} Senden freigeben`;
+    b.style.background = offen ? '#A3233A' : 'var(--green)';
+    $('#pQr', el).style.filter = offen ? '' : 'blur(6px)'; $('#pQr', el).style.opacity = offen ? '1' : '.35';
+    $('#pLk', el).style.display = offen ? 'none' : 'flex';
+  }
   const url = () => new URL('senden.html', location.href).href.split('#')[0] + '?s=' + code;
 
   el.innerHTML = `<div style="display:grid;grid-template-columns:330px 1fr;gap:22px;height:100%">
     <div class="glass card2" style="display:flex;flex-direction:column;align-items:center;text-align:center">
       <div class="eyebrow">Digitale Pinnwand</div>
       <h2 style="font-size:28px;margin:4px 0 10px">Scannen und 3 Begriffe senden</h2>
-      <div id="pQr" style="background:#fff;border-radius:16px;padding:12px;width:230px;height:230px"></div>
+      <div style="position:relative"><div id="pQr" style="background:#fff;border-radius:16px;padding:12px;width:230px;height:230px;transition:filter .3s,opacity .3s"></div><div id="pLk" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.88);border-radius:16px;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:#A3233A;font:800 22px var(--f-d)">${ICON('lock',46)}Senden gesperrt</div></div>
       <div style="margin-top:10px;font:600 13px var(--f-b);color:var(--muted)">oder Code eingeben</div>
       <div id="pCode" style="font:800 40px var(--f-d);letter-spacing:.25em;color:var(--navy)"></div>
       <div id="pCnt" style="font:700 18px var(--f-d);color:var(--slate-d);margin-top:4px"></div>
       <div id="pOff" style="display:none;margin-top:10px;font-size:13px;color:#A3233A;line-height:1.35">Noch nicht mit Supabase verbunden (config.js). Demo-Modus.</div>
       <div style="display:flex;gap:8px;margin-top:auto;flex-wrap:wrap;justify-content:center">
+        <button class="btn2" id="pLock" style="font-size:14px;padding:9px 14px"></button>
         <button class="btn2 ghost" id="pNew" style="font-size:14px;padding:9px 14px">${ICON('reset',15)} Neue Runde</button>
         <button class="btn2 ghost" id="pDemo" style="font-size:14px;padding:9px 14px;display:none">Demo-Begriffe</button>
       </div>
@@ -105,12 +126,15 @@ F.pinnwand = { kurz: 'Pinnwand', render(el){
 
   $('#pMode', el).onclick = () => { mode = mode === 'lose' ? 'cluster' : 'lose';
     $('#pMode', el).innerHTML = mode === 'lose' ? `${ICON('saeulen',18)} Clustern` : `${ICON('reset',18)} Alle lose zeigen`; draw(); };
-  $('#pNew', el).onclick = () => { code = newCode(); ls.set('pw-code', code); items = []; lastId = 0; manual = {}; hidden = []; mode = 'lose';
-    $('#pMode', el).innerHTML = `${ICON('saeulen',18)} Clustern`; drawQR(); draw(); };
+  $('#pNew', el).onclick = async () => { if (online && offen) await setStatus(false); code = newCode(); ls.set('pw-code', code); items = []; lastId = 0; manual = {}; hidden = []; mode = 'lose';
+    $('#pMode', el).innerHTML = `${ICON('saeulen',18)} Clustern`; drawQR(); draw(); await start(); };
+  $('#pLock', el).onclick = () => setStatus(!offen);
+  async function start(){ offen = ls.get('pw-offen-' + code, true); lockUI();
+    if (online) { let ok = await setStatus(offen); if (ok === false) { code = newCode(); ls.set('pw-code', code); drawQR(); ok = await setStatus(true); } } }
   $('#pDemo', el).onclick = () => { DEMO.forEach((t, i) => items.push({ id: -i - 1, begriff: t })); draw(); };
   $('#pAdd', el).addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.value.trim()) { items.push({ id: -Date.now(), begriff: e.target.value.trim().slice(0, 40) }); e.target.value = ''; draw(); } });
 
-  drawQR(); draw();
+  drawQR(); draw(); start();
   if (online) { poll(); timer = setInterval(poll, 2500); }
 }};
 })();

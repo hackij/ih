@@ -39,3 +39,40 @@ Gleiche URL und gleichen Key verwenden, nur `app` ändern (z. B. "uk").
 ```sql
 delete from public.begriffe where created_at < now() - interval '30 days';
 ```
+
+## Nachtrag: Senden sperren und freigeben
+
+```sql
+create table public.sitzungen (
+  app text not null,
+  sitzung text not null,
+  token text not null,
+  offen boolean not null default true,
+  created_at timestamptz not null default now(),
+  primary key (app, sitzung)
+);
+alter table public.sitzungen enable row level security;
+grant select (app, sitzung, offen) on public.sitzungen to anon;
+create policy "Status lesen" on public.sitzungen for select to anon using (true);
+
+create or replace function public.pinnwand_setzen(p_app text, p_sitzung text, p_token text, p_offen boolean)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare t text;
+begin
+  select token into t from public.sitzungen where app = p_app and sitzung = p_sitzung;
+  if t is null then
+    insert into public.sitzungen (app, sitzung, token, offen) values (p_app, p_sitzung, p_token, p_offen);
+    return true;
+  end if;
+  if t <> p_token then return false; end if;
+  update public.sitzungen set offen = p_offen where app = p_app and sitzung = p_sitzung;
+  return true;
+end $$;
+revoke all on function public.pinnwand_setzen(text, text, text, boolean) from public;
+grant execute on function public.pinnwand_setzen(text, text, text, boolean) to anon;
+
+drop policy "Begriffe senden" on public.begriffe;
+create policy "Begriffe senden" on public.begriffe for insert to anon
+  with check (exists (select 1 from public.sitzungen s
+                      where s.app = begriffe.app and s.sitzung = begriffe.sitzung and s.offen));
+```

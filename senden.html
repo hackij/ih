@@ -46,6 +46,18 @@
       <input id="c" maxlength="8" autocomplete="off" placeholder="z. B. K7QM" style="text-transform:uppercase;letter-spacing:.2em"><button class="btn" id="go">Weiter</button>`;
     document.getElementById('go').onclick = () => { const v = document.getElementById('c').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (v.length >= 3) { location.search = '?s=' + v; } };
   }
+  let gesperrt = false;
+  async function status(){
+    if (!P.supabaseUrl || !P.supabaseKey) return true;
+    try { const r = await fetch(P.supabaseUrl.replace(/\/$/, '') + '/rest/v1/sitzungen?select=offen&app=eq.' + encodeURIComponent(P.app || 'ih') + '&sitzung=eq.' + code, { headers: hdr() });
+      if (!r.ok) return true; const d = await r.json(); return d.length ? !!d[0].offen : false; } catch(e){ return true; }
+  }
+  function locked(){
+    box.innerHTML = `<div class="eyebrow">Digitale Pinnwand · <span class="code">${code}</span></div><h1>Gerade gesperrt</h1>
+      <p>Die Lehrkraft hat das Senden gerade gesperrt. Sobald es wieder freigegeben ist, kannst du hier weitermachen.</p>
+      <div class="sent">${sent.map(t => `<span>✓ ${esc(t)}</span>`).join('')}</div>`;
+  }
+  async function watch(){ const o = await status(); if (o === gesperrt) { gesperrt = !o; gesperrt ? locked() : form(); } }
   function form(){
     const left = max - sent.length;
     box.innerHTML = `<div class="eyebrow">Digitale Pinnwand · <span class="code">${code}</span></div>
@@ -67,13 +79,14 @@
         const r = await fetch(P.supabaseUrl.replace(/\/$/, '') + '/rest/v1/' + (P.tabelle || 'begriffe'), {
           method: 'POST', headers: Object.assign(hdr(), { 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
           body: JSON.stringify({ app: P.app || 'ih', sitzung: code, begriff: v.slice(0, 40) }) });
+        if (r.status === 401 || r.status === 403) { gesperrt = true; locked(); return; }
         if (!r.ok) throw new Error(r.status);
         sent.push(v); try { sessionStorage.setItem('pw-' + code, JSON.stringify(sent)); } catch(e){}
         form(); document.getElementById('m').style.color = 'var(--green)'; document.getElementById('m').textContent = 'Angekommen! Schau an die Tafel.';
       } catch(e) { s.disabled = false; m.style.color = '#A3233A'; m.textContent = 'Senden hat nicht geklappt. Bitte nochmal versuchen.'; }
     };
   }
-  code.length >= 3 ? form() : askCode();
+  if (code.length >= 3) { form(); watch(); setInterval(watch, 4000); } else askCode();
 })();
 </script>
 </body>
