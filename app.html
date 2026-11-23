@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instandhaltung an Dach und Wand</title>
+<meta name="theme-color" content="#F3F6FB">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .wrap{max-width:900px;margin:0 auto;padding:22px 18px 130px}
+  .apphead{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  .apphead img{height:42px}
+  .apphead b{font:700 21px var(--f-d);color:var(--navy);letter-spacing:.01em}
+  .apphead a{margin-left:auto;text-decoration:none}
+  .hero{background:linear-gradient(135deg,#163a86,#113277);color:#fff;border-radius:26px;padding:22px 24px;box-shadow:var(--shadow);margin-bottom:16px}
+  .hero .eyebrow{color:#a9c6ea}
+  .hero h1{color:#fff;font-size:34px;font-weight:700;line-height:1.08;margin-top:8px}
+  .hero p{margin:10px 0 0;color:#dbe7f7;line-height:1.5}
+  .card{padding:22px 22px;margin-bottom:16px}
+  .card h2{font-size:30px;font-weight:700;margin:6px 0 10px}
+  .card h3{font-size:22px;font-weight:700;margin:14px 0 6px}
+  .card p,.card li{line-height:1.55;font-size:16px}
+  .card p{margin:8px 0}
+  .muted{color:var(--muted)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:640px){.grid2{grid-template-columns:1fr}.hero h1{font-size:28px}.card h2{font-size:26px}}
+
+  /* Schritte */
+  .steps{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;margin-bottom:6px;scrollbar-width:none}
+  .steps button{flex:none;border:0;border-radius:999px;padding:9px 14px;font:600 14px var(--f-b);background:rgba(255,255,255,.75);color:var(--slate-d);box-shadow:inset 0 0 0 1.5px var(--line);display:flex;gap:7px;align-items:center}
+  .steps button .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;background:rgba(17,50,119,.08)}
+  .steps button.on{background:var(--navy);color:#fff;box-shadow:none}
+  .steps button.on .n{background:rgba(255,255,255,.2)}
+  .steps button.done .n{background:var(--green);color:#fff}
+  .modhead{margin:4px 0 12px}
+  .modhead .eyebrow{color:var(--c,var(--blue))}
+  .modhead h1{font-size:40px;font-weight:800;line-height:1.05;margin-top:6px}
+  .next{display:flex;justify-content:flex-end;margin-top:6px}
+
+  /* Aufgabe */
+  .task{display:flex;gap:12px;align-items:flex-start;background:rgba(46,117,182,.08);border-radius:16px;padding:14px 16px;margin:12px 0}
+  .task .ti{flex:none;width:34px;height:34px;border-radius:11px;background:var(--blue);color:#fff;display:grid;place-items:center}
+  .task p{margin:0;font-weight:500}
+  .merke{border-left:5px solid var(--berry);background:rgba(163,35,58,.06);border-radius:0 16px 16px 0;padding:12px 16px;margin:14px 0}
+  .merke > b:first-child{color:var(--berry);font:700 13px var(--f-b);letter-spacing:.18em;text-transform:uppercase;display:block;margin-bottom:4px}
+  textarea,input[type=text]{width:100%;font:16px/1.45 var(--f-b);color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.85);resize:vertical}
+  textarea:focus,input:focus{outline:none;border-color:var(--blue)}
+  img.ph{width:100%;border-radius:16px;display:block;object-fit:cover}
+  figure{margin:10px 0}
+  figcaption{font-size:13px;color:var(--muted);margin-top:6px}
+
+  /* Sortierer */
+  .pool{display:flex;flex-wrap:wrap;gap:8px;min-height:44px;margin:12px 0}
+  .item{border:0;text-align:left;border-radius:14px;padding:10px 13px;font:500 15px/1.3 var(--f-b);background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(17,50,119,.10), inset 0 0 0 1.5px var(--line)}
+  .item.sel{box-shadow:0 0 0 3px var(--blue);transform:translateY(-1px)}
+  .item.ok{background:rgba(47,138,120,.10);box-shadow:inset 0 0 0 1.5px rgba(47,138,120,.35);cursor:default;font-size:14px}
+  .item.shake{animation:shake .35s}
+  @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .buckets{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+  .bucket{border-radius:18px;padding:12px;background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c) 35%,transparent);min-height:120px;cursor:pointer;transition:background .15s}
+  .bucket.hot{background:color-mix(in srgb,var(--c) 12%,white)}
+  .bucket h4{margin:0 0 2px;font:800 20px var(--f-d);color:var(--c)}
+  .bucket small{display:block;color:var(--muted);font-size:12.5px;margin-bottom:8px}
+  .bucket .in{display:flex;flex-direction:column;gap:6px}
+  .fb{margin-top:10px;border-radius:14px;padding:12px 14px;font-size:15px;line-height:1.45;display:none}
+  .fb.on{display:block}
+  .fb.good{background:rgba(47,138,120,.12);color:#1d5a4e}
+  .fb.bad{background:rgba(163,35,58,.10);color:#7c1a2c}
+  .score{font:700 15px var(--f-b);color:var(--navy)}
+
+  /* Quiz */
+  .q{margin:14px 0 18px}
+  .q .qt{font:600 17px/1.4 var(--f-b);margin-bottom:8px}
+  .opt{display:block;width:100%;text-align:left;border:0;margin:6px 0;padding:12px 14px;border-radius:14px;background:#fff;font:500 15.5px var(--f-b);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+  .opt.right{background:rgba(47,138,120,.14);box-shadow:inset 0 0 0 2px var(--green)}
+  .opt.wrong{background:rgba(163,35,58,.10);box-shadow:inset 0 0 0 2px var(--berry)}
+  .opt[disabled]{cursor:default}
+
+  /* Nav */
+  nav.bar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:4px;padding:6px;border-radius:26px;z-index:10;max-width:calc(100vw - 20px);overflow-x:auto}
+  nav.bar a{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 14px;border-radius:20px;text-decoration:none;color:var(--slate-d);font:600 12px var(--f-b);min-width:74px}
+  nav.bar a.on{background:var(--navy);color:#fff}
+  .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;border-radius:16px;padding:12px 18px;font-weight:600;opacity:0;transition:.25s;z-index:30;pointer-events:none}
+  .toast.on{opacity:1;transform:translateX(-50%)}
+  .stile{display:flex;gap:14px;align-items:center;padding:16px;border-radius:18px;background:rgba(255,255,255,.8);text-decoration:none;color:inherit;box-shadow:0 4px 14px rgba(17,50,119,.08);margin-bottom:10px}
+  .stile .ic{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;color:#fff;background:var(--c);flex:none}
+  .stile b{font:700 21px var(--f-d);color:var(--navy);display:block}
+  .stile small{color:var(--muted)}
+  .bar-p{height:8px;border-radius:9px;background:rgba(17,50,119,.08);overflow:hidden;margin-top:6px;width:160px}
+  .bar-p i{display:block;height:100%;background:var(--green);border-radius:9px}
+</style>
+</head>
+<body>
+<div class="blobs"><i></i><i></i><i></i><i></i></div>
+<div class="wrap">
+  <div class="apphead">
+    <img src="assets/logos.png" alt="BS1 Spengler Bayreuth">
+    <b id="appTitle"></b>
+    <a href="index.html" class="btn ghost sm" id="mapBtn"></a>
+  </div>
+  <main id="main"></main>
+</div>
+<nav class="bar glass" id="nav"></nav>
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script src="assets/icons.js"></script>
+<script>
+/* ===== Kern der App: Router, Speicher, Bausteine ===== */
+window.LF = (function(){
+  const C = window.LF_CONFIG, mods = {}, KEY = 'lf-instandhaltung-v1';
+  const $ = (s, el=document) => el.querySelector(s);
+  let store = {};
+  try { store = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) { store = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){} };
+  const get = (k, d) => (k in store ? store[k] : d);
+  const set = (k, v) => { store[k] = v; save(); };
+  const S = Object.fromEntries(C.saeulen.map(s => [s.id, s]));
+
+  function toast(t){ const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 2200); }
+  function h(html){ const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; }
+  function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  /* Sortierer: antippen, dann Kategorie antippen */
+  function sorter(el, cfg){
+    const items = shuffle(cfg.items.map((x, i) => ({...x, i})));
+    let sel = null, done = 0, tries = 0;
+    el.innerHTML = `<div class="pool"></div><div class="buckets"></div><div class="fb"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><span class="score"></span><button class="btn ghost sm rs">${ICON('reset',16)} Neu mischen</button></div>`;
+    const pool = $('.pool', el), bk = $('.buckets', el), fb = $('.fb', el), sc = $('.score', el);
+    bk.innerHTML = cfg.buckets.map(b => `<div class="bucket" data-b="${b.id}" style="--c:${b.farbe||'#113277'}"><h4>${b.name}</h4><small>${b.sub||''}</small><div class="in"></div></div>`).join('');
+    items.forEach(it => { const b = h(`<button class="item">${it.t}</button>`); b.onclick = () => { if (b.classList.contains('ok')) return; pool.querySelectorAll('.item').forEach(x => x.classList.remove('sel')); sel = (sel && sel.it === it) ? null : {it, b}; if (sel) b.classList.add('sel'); bk.querySelectorAll('.bucket').forEach(x => x.classList.toggle('hot', !!sel)); }; pool.appendChild(b); });
+    const upd = () => sc.textContent = `${done} von ${items.length} richtig zugeordnet` + (tries ? ` · ${tries} Fehlversuch${tries>1?'e':''}` : '');
+    upd();
+    bk.querySelectorAll('.bucket').forEach(bu => bu.onclick = () => {
+      if (!sel) { toast('Erst eine Karte antippen'); return; }
+      const {it, b} = sel; const ok = it.b === bu.dataset.b;
+      fb.className = 'fb on ' + (ok ? 'good' : 'bad');
+      fb.innerHTML = ok ? `<b>Richtig.</b> ${it.why || ''}` : `<b>Noch nicht.</b> ${it.hint || 'Überlege noch einmal, welches Ziel die Maßnahme hat.'}`;
+      if (ok) { b.classList.remove('sel'); b.classList.add('ok'); $('.in', bu).appendChild(b); done++; }
+      else { tries++; b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 400); }
+      sel = ok ? null : sel; bk.querySelectorAll('.bucket').forEach(x => x.classList.toggle('hot', !!sel));
+      upd();
+      if (done === items.length) { fb.className = 'fb on good'; fb.innerHTML = `<b>Alles zugeordnet!</b> ${cfg.ende || ''}`; cfg.onDone && cfg.onDone(tries); }
+    });
+    $('.rs', el).onclick = () => sorter(el, cfg);
+  }
+
+  /* Quiz */
+  function quiz(el, qs, onDone){
+    let right = 0, answered = 0;
+    el.innerHTML = qs.map((q, qi) => `<div class="q" data-q="${qi}"><div class="qt">${qi+1}. ${q.q}</div>
+      ${shuffle(q.o.map((o, oi) => ({o, oi}))).map(x => `<button class="opt" data-o="${x.oi}">${x.o}</button>`).join('')}
+      <div class="fb"></div></div>`).join('') + `<div class="score" id="qsum"></div>`;
+    el.querySelectorAll('.q').forEach(qe => {
+      const q = qs[+qe.dataset.q];
+      qe.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+        const ok = +b.dataset.o === q.a; answered++; if (ok) right++;
+        qe.querySelectorAll('.opt').forEach(x => { x.disabled = true; if (+x.dataset.o === q.a) x.classList.add('right'); });
+        if (!ok) b.classList.add('wrong');
+        const fb = $('.fb', qe); fb.className = 'fb on ' + (ok ? 'good' : 'bad'); fb.innerHTML = (ok ? '<b>Richtig.</b> ' : '<b>Leider falsch.</b> ') + (q.e || '');
+        if (answered === qs.length) { $('#qsum', el).innerHTML = `Ergebnis: ${right} von ${qs.length} richtig. ` + (right >= qs.length - 1 ? 'Stark!' : 'Schau dir die markierten Fragen noch einmal an.') + ` <button class="btn ghost sm" style="margin-left:8px">${ICON('reset',14)} Nochmal</button>`; $('#qsum button', el).onclick = () => quiz(el, qs, onDone); onDone && onDone(right); }
+      });
+    });
+  }
+
+  /* Notizfeld mit Speicherung */
+  function note(key, ph, rows=3){
+    const v = (get('note:' + key, '') + '').replace(/</g, '&lt;');
+    return `<textarea rows="${rows}" data-note="${key}" placeholder="${ph}">${v}</textarea>`;
+  }
+  document.addEventListener('input', e => { const k = e.target.dataset && e.target.dataset.note; if (k) set('note:' + k, e.target.value); });
+
+  /* Modul-Gerüst mit Schritten */
+  function steps(el, mod){
+    const st = mod.schritte; const key = 'step:' + mod.id;
+    let cur = Math.min(get(key, 0), st.length - 1);
+    const p = S[mod.saeule]; const col = p ? p.farbe : '#2E75B6';
+    el.innerHTML = `<div class="modhead" style="--c:${col}"><div class="eyebrow">${mod.eyebrow || (p ? 'Säule ' + p.name : 'Einstieg')}</div><h1>${mod.titel}</h1></div>
+      <div class="steps"></div><div class="sbody"></div>`;
+    const bar = $('.steps', el), body = $('.sbody', el);
+    function draw(){
+      bar.innerHTML = st.map((s, i) => `<button class="${i===cur?'on':''} ${get('done:'+mod.id+':'+i)?'done':''}" data-i="${i}"><span class="n">${get('done:'+mod.id+':'+i) ? ICON('check',13,3) : i+1}</span>${s.name}</button>`).join('');
+      bar.querySelectorAll('button').forEach(b => b.onclick = () => { cur = +b.dataset.i; set(key, cur); draw(); scrollTo({top:0, behavior:'smooth'}); });
+      body.innerHTML = '';
+      const sec = document.createElement('div'); body.appendChild(sec);
+      st[cur].render(sec, api);
+      const nx = h(`<div class="next">${cur < st.length - 1 ? `<button class="btn">Weiter: ${st[cur+1].name} ${ICON('pfeilR',16)}</button>` : `<a class="btn" style="text-decoration:none" href="#start">Station abgeschlossen ${ICON('check',16)}</a>`}</div>`);
+      body.appendChild(nx);
+      $('.btn', nx).addEventListener('click', () => { set('done:'+mod.id+':'+cur, true); if (cur < st.length - 1) { cur++; set(key, cur); draw(); scrollTo({top:0, behavior:'smooth'}); } else toast('Super, Station geschafft!'); });
+      const act = bar.querySelector('.on'); act && act.scrollIntoView({inline:'center', block:'nearest'});
+    }
+    draw();
+  }
+  const api = {C, S, get, set, toast, h, shuffle, sorter, quiz, note, ICON};
+
+  /* Startseite */
+  function home(el){
+    const open = C.stationen.filter(s => s.status === 'offen');
+    el.innerHTML = `<div class="hero fade"><div class="eyebrow">Leitfrage</div><h1>${C.leitfrage}</h1></div>
+      <div class="card glass fade"><div class="eyebrow">Worum es geht</div>
+        <img class="ph" src="assets/img/haus-sperber.png" alt="Einfamilienhaus" style="background:#fff;margin:12px 0;max-height:220px;object-fit:contain">
+        <p>${C.ueberblick}</p></div>
+      <div class="card glass fade"><div class="eyebrow">Deine Stationen</div><h2>Was ist schon freigeschaltet?</h2>
+        ${open.map(s => { const m = mods[s.id]; const n = m ? m.schritte.length : 0; const d = m ? m.schritte.filter((_, i) => get('done:'+s.id+':'+i)).length : 0; const p = S[s.saeule];
+          return `<a class="stile" href="#${s.id}" style="--c:${p?p.farbe:'#113277'}"><div class="ic">${ICON(p?p.icon:'saeulen',24)}</div><div style="flex:1"><b>${s.titel}</b><small>${s.sub}</small>${n?`<div class="bar-p"><i style="width:${Math.round(d/n*100)}%"></i></div>`:''}</div>${ICON('pfeilR',20)}</a>`; }).join('')}
+        <p class="muted" style="font-size:14px;margin-top:12px">Weitere Stationen kommen im Laufe des Lernfelds dazu. Den Überblick gibt die Lernlandkarte.</p></div>`;
+  }
+
+  function nav(cur){
+    const open = C.stationen.filter(s => s.status === 'offen' && mods[s.id]);
+    $('#nav').innerHTML = `<a href="#start" class="${cur==='start'?'on':''}">${ICON('home',20)}Start</a>` +
+      open.map(s => { const p = S[s.saeule]; return `<a href="#${s.id}" class="${cur===s.id?'on':''}">${ICON(p?p.icon:'saeulen',20)}${mods[s.id].kurz || s.titel}</a>`; }).join('');
+  }
+  function route(){
+    const id = (location.hash || '#start').slice(1);
+    const main = $('#main');
+    if (mods[id]) { steps(main, mods[id]); nav(id); } else { home(main); nav('start'); }
+    scrollTo(0, 0);
+  }
+  function boot(){
+    document.title = C.titel; $('#appTitle').textContent = C.titel;
+    $('#mapBtn').innerHTML = ICON('karte',16) + ' Lernlandkarte';
+    const open = C.stationen.filter(s => s.status === 'offen' && s.modul);
+    let left = open.length; if (!left) route();
+    open.forEach(s => { const sc = document.createElement('script'); sc.src = s.modul; sc.onload = sc.onerror = () => { if (--left === 0) route(); }; document.body.appendChild(sc); });
+    addEventListener('hashchange', route);
+  }
+  return { register(m){ const s = C.stationen.find(x => x.id === m.id); if (s) { m.saeule = m.saeule || s.saeule; m.titel = m.titel || s.titel; } mods[m.id] = m; }, boot, api };
+})();
+LF.boot();
+</script>
+</body>
+</html>
