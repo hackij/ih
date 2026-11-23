@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Begriff senden · Instandhaltung</title>
+<meta name="theme-color" content="#F3F6FB">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .wrap{max-width:520px;margin:0 auto;padding:26px 18px 60px}
+  .top{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+  .top img{height:40px}
+  .card{padding:22px}
+  h1{font-size:34px;font-weight:800;line-height:1.05;margin:6px 0 8px}
+  p{color:var(--slate-d);line-height:1.5;margin:0 0 16px}
+  input{width:100%;font:600 20px var(--f-b);border:2px solid var(--line);border-radius:16px;padding:14px 16px;background:#fff;color:var(--ink)}
+  input:focus{outline:none;border-color:var(--blue)}
+  .btn{width:100%;margin-top:12px;padding:16px;font-size:18px}
+  .btn[disabled]{opacity:.4}
+  .sent{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .sent span{background:rgba(47,138,120,.12);color:#1d5a4e;border-radius:12px;padding:8px 12px;font-weight:600}
+  .msg{margin-top:12px;font-weight:600;min-height:22px}
+  .code{font:800 22px var(--f-d);letter-spacing:.2em;color:var(--navy)}
+</style>
+</head>
+<body>
+<div class="blobs"><i></i><i></i><i></i><i></i></div>
+<div class="wrap">
+  <div class="top"><img src="assets/logos.png" alt="BS1 Spengler Bayreuth"></div>
+  <div class="card glass" id="box"></div>
+</div>
+<script src="config.js"></script>
+<script>
+(function(){
+  const P = window.LF_PINNWAND || {}, box = document.getElementById('box');
+  const max = P.maxProSchueler || 3;
+  const hdr = () => P.supabaseKey.startsWith('sb_') ? { apikey: P.supabaseKey } : { apikey: P.supabaseKey, Authorization: 'Bearer ' + P.supabaseKey };
+  let code = (new URLSearchParams(location.search).get('s') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  let sent = [];
+  try { sent = JSON.parse(sessionStorage.getItem('pw-' + code) || '[]'); } catch(e){}
+  const esc = t => t.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function askCode(){
+    box.innerHTML = `<div class="eyebrow">Digitale Pinnwand</div><h1>Code eingeben</h1><p>Der Code steht an der Tafel unter dem QR-Code.</p>
+      <input id="c" maxlength="8" autocomplete="off" placeholder="z. B. K7QM" style="text-transform:uppercase;letter-spacing:.2em"><button class="btn" id="go">Weiter</button>`;
+    document.getElementById('go').onclick = () => { const v = document.getElementById('c').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (v.length >= 3) { location.search = '?s=' + v; } };
+  }
+  function form(){
+    const left = max - sent.length;
+    box.innerHTML = `<div class="eyebrow">Digitale Pinnwand · <span class="code">${code}</span></div>
+      <h1>Was bedeutet für dich „Instandhaltung“?</h1>
+      <p>Schick bis zu <b>${max} Begriffe</b> ab, jeden einzeln. Kurz und knapp, ein bis drei Wörter.</p>
+      <input id="t" maxlength="40" autocomplete="off" placeholder="Dein Begriff" ${left <= 0 ? 'disabled' : ''}>
+      <button class="btn" id="s" ${left <= 0 ? 'disabled' : ''}>${left > 0 ? 'Absenden' : 'Fertig, danke!'}</button>
+      <div class="msg" id="m"></div>
+      <div class="sent">${sent.map(t => `<span>✓ ${esc(t)}</span>`).join('')}</div>`;
+    const t = document.getElementById('t'), s = document.getElementById('s'), m = document.getElementById('m');
+    if (left > 0) t.focus();
+    t.addEventListener('keydown', e => { if (e.key === 'Enter') s.click(); });
+    s.onclick = async () => {
+      const v = t.value.trim().replace(/\s+/g, ' ');
+      if (!v) return;
+      if (!P.supabaseUrl || !P.supabaseKey) { m.style.color = '#A3233A'; m.textContent = 'Die Pinnwand ist noch nicht verbunden. Bitte der Lehrkraft Bescheid geben.'; return; }
+      s.disabled = true; m.style.color = 'var(--slate-d)'; m.textContent = 'Wird gesendet …';
+      try {
+        const r = await fetch(P.supabaseUrl.replace(/\/$/, '') + '/rest/v1/' + (P.tabelle || 'begriffe'), {
+          method: 'POST', headers: Object.assign(hdr(), { 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+          body: JSON.stringify({ app: P.app || 'ih', sitzung: code, begriff: v.slice(0, 40) }) });
+        if (!r.ok) throw new Error(r.status);
+        sent.push(v); try { sessionStorage.setItem('pw-' + code, JSON.stringify(sent)); } catch(e){}
+        form(); document.getElementById('m').style.color = 'var(--green)'; document.getElementById('m').textContent = 'Angekommen! Schau an die Tafel.';
+      } catch(e) { s.disabled = false; m.style.color = '#A3233A'; m.textContent = 'Senden hat nicht geklappt. Bitte nochmal versuchen.'; }
+    };
+  }
+  code.length >= 3 ? form() : askCode();
+})();
+</script>
+</body>
+</html>
